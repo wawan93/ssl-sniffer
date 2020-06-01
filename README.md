@@ -28,6 +28,10 @@ The app should work in Docker. Make sure you provide all the details how it woul
 * There should be a readme file with a description on how to compile and use the app. 
 
 ## Usage 
-// TODO
 
+```
+docker run --rm --name sniffer -d -p 8443:443 wawan/sniffer
+curl 127.0.0.1:8443
+docker logs -f sniffer
+```
 

@@ -15,7 +15,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("can't open live: %v", err)
 	}
-	log.Printf("open live")
 	defer live.Close()
 
 	// detect SSL handshake packets
