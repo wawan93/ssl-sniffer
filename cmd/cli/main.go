@@ -2,22 +2,23 @@ package main
 
 import (
 	"fmt"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
 	"log"
 	"time"
 
 	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcap"
 )
 
 func main() {
-	live, err := pcap.OpenLive("eth0", 1500, false, time.Minute)
+	live, err := pcap.OpenLive("eth0", 1500, false, time.Second)
 	if err != nil {
 		log.Fatalf("can't open live: %v", err)
 	}
 	log.Printf("open live")
 	defer live.Close()
 
+	// detect SSL handshake packets
 	err = live.SetBPFFilter("(dst port 443)")
 	if err != nil {
 		log.Fatalf("can't set filter: %v", err)
@@ -29,9 +30,6 @@ func main() {
 		go packetInfo(packet)
 	}
 
-	// TODO: detect SSL handshake packets
-	// TODO: Print to stdout each detection in the following format:
-	// IP_SRC,TCP_SRC,IP_DST,TCP_DST,COUNT(TCP_OPTIONS)
 }
 
 func packetInfo(packet gopacket.Packet) {
@@ -41,8 +39,11 @@ func packetInfo(packet gopacket.Packet) {
 	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, &eth, &ip4, &tcp)
 	decodedLayers := make([]gopacket.LayerType, 0, 10)
 	err := parser.DecodeLayers(packet.Data(), &decodedLayers)
-	fmt.Println(ip4.SrcIP, tcp.SrcPort, ip4.DstIP, tcp.DstPort) // TODO: options
 	if err != nil {
 		fmt.Println("error encountered:", err)
 	}
+
+	// print to stdout each detection in the following format:
+	// IP_SRC,TCP_SRC,IP_DST,TCP_DST,COUNT(TCP_OPTIONS)
+	fmt.Println(ip4.SrcIP, tcp.SrcPort, ip4.DstIP, tcp.DstPort, len(tcp.Options))
 }
