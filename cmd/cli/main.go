@@ -1,52 +1,37 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"fmt"
 	"log"
-	"time"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
+	"sniffer/pkg/sniff"
 )
 
 func main() {
 	device := flag.String("device", "eth0", "")
 	flag.Parse()
 
-	live, err := pcap.OpenLive(*device, 1500, false, time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	messages, err := sniff.Sniff(ctx, *device)
 	if err != nil {
-		log.Fatalf("can't open live device %s: %v", *device, err)
-	}
-	defer live.Close()
-
-	// detect SSL handshake packets
-	err = live.SetBPFFilter("tcp port 443 and (tcp[((tcp[12:1] & 0xf0) >> 2)+5:1] = 0x01) and (tcp[((tcp[12:1] & 0xf0) >> 2):1] = 0x16)")
-	if err != nil {
-		log.Fatalf("can't set filter: %v", err)
+		log.Fatal(err)
 	}
 
-	psrc := gopacket.NewPacketSource(live, live.LinkType())
+	go func() {
+		for msg := range messages {
+			log.Println(msg)
+		}
+	}()
 
-	for packet := range psrc.Packets() {
-		go packetInfo(packet)
-	}
+	termChan := make(chan os.Signal, 1)
+	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
+	<-termChan
 
-}
-
-func packetInfo(packet gopacket.Packet) {
-	var eth layers.Ethernet
-	var ip4 layers.IPv4
-	var tcp layers.TCP
-	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, &eth, &ip4, &tcp)
-	decodedLayers := make([]gopacket.LayerType, 0, 10)
-	err := parser.DecodeLayers(packet.Data(), &decodedLayers)
-	if err != nil {
-		fmt.Println("error encountered:", err)
-	}
-
-	// print to stdout each detection in the following format:
-	// IP_SRC,TCP_SRC,IP_DST,TCP_DST,COUNT(TCP_OPTIONS)
-	fmt.Println(ip4.SrcIP, tcp.SrcPort, ip4.DstIP, tcp.DstPort, len(tcp.Options))
+	cancel()
 }
