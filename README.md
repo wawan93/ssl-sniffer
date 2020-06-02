@@ -30,8 +30,6 @@ The app should work in Docker. Make sure you provide all the details how it woul
 ## Usage 
 
 ```
-docker run --rm --name sniffer -d -p 8443:443 wawan/sniffer
-curl 127.0.0.1:8443
-docker logs -f sniffer
+docker run --rm --name sniffer -p 443:443 wawan/sniffer
 ```
 

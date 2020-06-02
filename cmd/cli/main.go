@@ -22,7 +22,7 @@ func main() {
 	defer live.Close()
 
 	// detect SSL handshake packets
-	err = live.SetBPFFilter("(dst port 443)")
+	err = live.SetBPFFilter("tcp port 443 and (tcp[((tcp[12:1] & 0xf0) >> 2)+5:1] = 0x01) and (tcp[((tcp[12:1] & 0xf0) >> 2):1] = 0x16)")
 	if err != nil {
 		log.Fatalf("can't set filter: %v", err)
 	}
