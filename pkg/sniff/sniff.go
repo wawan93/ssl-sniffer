@@ -33,7 +33,7 @@ func Sniff(ctx context.Context, device string) (<-chan string, error) {
 		for {
 			select {
 			case packet := <-packetsCh:
-				go packetInfo(packet, messages)
+				go PacketInfo(packet, messages)
 			case <-ctx.Done():
 				close(messages)
 				live.Close()
@@ -46,7 +46,7 @@ func Sniff(ctx context.Context, device string) (<-chan string, error) {
 	return messages, nil
 }
 
-func packetInfo(packet gopacket.Packet, messages chan<- string) {
+func PacketInfo(packet gopacket.Packet, messages chan<- string) {
 	var eth layers.Ethernet
 	var ip4 layers.IPv4
 	var tcp layers.TCP
