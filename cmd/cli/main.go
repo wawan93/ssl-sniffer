@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"time"
@@ -11,9 +12,12 @@ import (
 )
 
 func main() {
-	live, err := pcap.OpenLive("eth0", 1500, false, time.Second)
+	device := flag.String("device", "eth0", "")
+	flag.Parse()
+
+	live, err := pcap.OpenLive(*device, 1500, false, time.Second)
 	if err != nil {
-		log.Fatalf("can't open live: %v", err)
+		log.Fatalf("can't open live device %s: %v", *device, err)
 	}
 	defer live.Close()
 
